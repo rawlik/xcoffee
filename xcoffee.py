@@ -1,4 +1,3 @@
-# A simple script to calculate BMI
 import pywebio
 from functools import partial
 from pywebio.input import actions, input, FLOAT, TEXT
@@ -63,4 +62,4 @@ def adduser():
 
 
 if __name__ == '__main__':
-    xcoffee()
+    pywebio.start_server(xcoffee, port=8080)
