@@ -20,6 +20,23 @@ def getusers():
 
     return res
 
+def gettotalbalance():
+    con = sqlite3.connect("xcoffee.db")
+    cur = con.cursor()
+    res = cur.execute("SELECT SUM(balance) FROM users").fetchone()[0]
+    con.close()
+
+    return res
+
+def gettotal():
+    con = sqlite3.connect("xcoffee.db")
+    cur = con.cursor()
+    res = cur.execute("SELECT SUM(total) FROM users").fetchone()[0]
+    con.close()
+
+    return res
+
+
 
 def xcoffee(username=None):
     clear()
@@ -73,7 +90,8 @@ def xcoffee(username=None):
                 put_text(f"{total:.1f}")
             ]
             for thisusername, name, balance, total in getusers()
-        ]
+        ] + \
+        [["SUM", put_markdown(f"**{gettotalbalance():.0f}**"), put_markdown(f"**{gettotal():.0f}**")]]
     )
 
 
