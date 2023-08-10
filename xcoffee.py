@@ -22,9 +22,11 @@ def getusers():
 
 def xcoffee(username=None):
     clear()
-    put_markdown("""
+    put_markdown(f"""
             # The coffee machine of the x-ray imaging group
             **DO NOT CHANGE ANY SETTINGS ON THE GRINDER AND THE MACHINE!**
+
+            A coffee is {price:.2f}Fr, a cup of hot water {price * waterfraction:.2f}Fr.
         """)
     put_collapse("Manual",
         put_markdown("""
