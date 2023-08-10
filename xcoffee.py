@@ -2,8 +2,8 @@ import pywebio
 import sqlite3
 import hashlib
 from functools import partial
-from pywebio.input import actions, input, input_group, FLOAT, TEXT, PASSWORD
-from pywebio.output import popup, close_popup, put_table, put_column, put_text, put_button, put_buttons, clear, put_info
+from pywebio.input import actions, input, FLOAT, TEXT, PASSWORD
+from pywebio.output import popup, close_popup, put_table, put_column, put_text, put_buttons, clear, put_markdown, put_collapse
 from pywebio.pin import put_input
 from pywebio_battery import popup_input, basic_auth, revoke_auth
 
@@ -22,38 +22,68 @@ def getusers():
 
 def xcoffee(username=None):
     clear()
-    put_column([
-        put_table(
-            [["", "Balance", "Total", ""]] + \
-            [
-                [
-                    put_text(name),
-                    put_text(f"{balance:.1f}"),
-                    put_text(f"{total:.1f}"),
-                    put_buttons([
-                            dict(label="☕ on credit", value="☕", color="success"),
-                            dict(label="☕ + 💰", value="☕ + 💰", color="success"),
-                            dict(label="🚰", value="🚰", color="success"),
-                            dict(label="🚰 + 💰", value="🚰 + 💰", color="success"),
-                            dict(label="pay", value="pay", color="warning"),
-                            # dict(label="delete", value="delete", color="danger")
-                        ],
-                        onclick=partial(rowaction, username=thisusername)) \
-                    if thisusername == username else put_text("") ]
-                for thisusername, name, balance, total in getusers()
-            ]
-        ),
-        put_buttons(
-            [
-                dict(label="logout", value="logout", color="danger")
-            ] if username is not None else \
-            [
-                dict(label="login", value="login", color="success"),
-                dict(label="register", value="register", color="danger")
+    put_markdown("""
+            # The coffee machine of the x-ray imaging group
+            **DO NOT CHANGE ANY SETTINGS ON THE GRINDER AND THE MACHINE!**
+        """)
+    put_collapse("Manual",
+        put_markdown("""
+                ## Grind
+                1. Put the porta filter on the grinder's fork. All the way in, so that it presses the button. One press is start. The second is stop.
+                2. Wait for the grinding to finish. You don't need to hold the porta filter during the process.
+                3. Place the porta filter on the mat, and use the tamper to get a nice, flat surface.
+
+                ## Brew
+                4. Put the porta filter in the coffee machine at 8 o'clock and twist it to 6 o'clock.
+                5. For a less strong coffee (americano), fill it with water from the water spout before brewing the coffee.
+                6. **Shortly** flip the second switch from the left down. **Do not hold it** (holding programmes the amount of water).
+
+                ## Clean
+                7. Take out the porta filter, and dump the grounds into the knock box.
+                8. Flip the second switch **shortly** up to flush the grouphead.
+                9. Clean the porta filter under the faucet.
+            """))
+    put_markdown("# Pay")
+    put_buttons(
+        [
+            dict(label="logout", value="logout", color="danger")
+        ] if username is not None else \
+        [
+            dict(label="login", value="login", color="success"),
+            dict(label="register", value="register", color="primary")
+        ],
+        onclick=homebutton
+    )
+    if username is not None:
+        put_buttons([
+                dict(label="☕ on credit", value="☕", color="success"),
+                dict(label="☕ for cash", value="☕ + 💰", color="success"),
+                dict(label="🚰 on credit 💰", value="🚰", color="primary"),
+                dict(label="🚰 for cash 💰", value="🚰 + 💰", color="primary"),
+                dict(label="pay credit", value="pay", color="warning"),
+                # dict(label="delete", value="delete", color="danger")
             ],
-            onclick=homebutton
-        ),
-    ])
+            onclick=partial(rowaction, username=username))
+    put_table(
+        [["", "Balance", "Total"]] + \
+        [
+            [
+                put_markdown(("**" if thisusername == username else "") + name + ("**" if thisusername == username else "")),
+                put_text(f"{balance:.1f}"),
+                put_text(f"{total:.1f}")
+                # put_buttons([
+                #         dict(label="☕ on credit", value="☕", color="success"),
+                #         dict(label="☕ for cash", value="☕ + 💰", color="success"),
+                #         dict(label="🚰 on credit 💰", value="🚰", color="primary"),
+                #         dict(label="🚰 for cash 💰", value="🚰 + 💰", color="primary"),
+                #         dict(label="pay credit", value="pay", color="warning"),
+                #         # dict(label="delete", value="delete", color="danger")
+                #     ],
+                #     onclick=partial(rowaction, username=thisusername)) \
+                if thisusername == username else put_text("") ]
+            for thisusername, name, balance, total in getusers()
+        ]
+    )
 
 
 def rowaction(action, username):
@@ -67,7 +97,7 @@ def rowaction(action, username):
         popup(
             title=f"{username} is paying for coffee",
             content=put_column([
-                put_text(f"Please put {price:.2f}Fr (or {price / 2:.2f}Fr into the cash box."),
+                put_text(f"Please put {price:.2f}Fr (or {price / 2:.2f}Fr if you are a student) into the cash box."),
                 put_buttons(
                     [ dict(label="paid", value="paid", color="success"),
                      dict(label="cancel", value="cancel", color="danger")],
@@ -164,7 +194,6 @@ def homebutton(action):
         username = form["username"]
         name = form["name"]
         password = hashpass(form["password"])
-        print("PASS: ", password)
 
         con = sqlite3.connect("xcoffee.db")
         cur = con.cursor()
@@ -180,7 +209,7 @@ def homebutton(action):
         actions(buttons=["okay"])
         xcoffee()
     elif action == "logout":
-        revoke_auth()
+        revoke_auth(token_name="xcoffee")
         xcoffee()
 
 
@@ -192,4 +221,4 @@ if __name__ == '__main__':
         cur.execute("CREATE TABLE users(username, name, password, balance, total)")
     con.close()
 
-    pywebio.start_server(xcoffee, port=8080)
+    pywebio.start_server(xcoffee, port=5999)
