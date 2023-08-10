@@ -11,6 +11,7 @@ from pywebio_battery import popup_input, basic_auth, revoke_auth
 price = 1.5
 waterfraction = 0.2
 
+
 def getusers():
     con = sqlite3.connect("xcoffee.db")
     cur = con.cursor()
@@ -46,23 +47,20 @@ def xcoffee(username=None):
                 9. Clean the porta filter under the faucet.
             """))
     put_markdown("# Pay")
-    put_buttons(
-        [
-            dict(label="logout", value="logout", color="danger")
-        ] if username is not None else \
-        [
-            dict(label="login", value="login", color="success"),
-            dict(label="register", value="register", color="primary")
-        ],
-        onclick=homebutton
-    )
-    if username is not None:
+    if username is None:
+        put_buttons([
+                dict(label="login", value="login", color="success"),
+                dict(label="register", value="register", color="primary")
+            ],
+            onclick=rowaction)
+    else:
         put_buttons([
                 dict(label="☕ on credit", value="☕", color="success"),
                 dict(label="☕ for cash", value="☕ + 💰", color="success"),
                 dict(label="🚰 on credit 💰", value="🚰", color="primary"),
                 dict(label="🚰 for cash 💰", value="🚰 + 💰", color="primary"),
                 dict(label="pay credit", value="pay", color="warning"),
+                dict(label="logout", value="logout", color="danger")
                 # dict(label="delete", value="delete", color="danger")
             ],
             onclick=partial(rowaction, username=username))
@@ -73,22 +71,50 @@ def xcoffee(username=None):
                 put_markdown(("**" if thisusername == username else "") + name + ("**" if thisusername == username else "")),
                 put_text(f"{balance:.1f}"),
                 put_text(f"{total:.1f}")
-                # put_buttons([
-                #         dict(label="☕ on credit", value="☕", color="success"),
-                #         dict(label="☕ for cash", value="☕ + 💰", color="success"),
-                #         dict(label="🚰 on credit 💰", value="🚰", color="primary"),
-                #         dict(label="🚰 for cash 💰", value="🚰 + 💰", color="primary"),
-                #         dict(label="pay credit", value="pay", color="warning"),
-                #         # dict(label="delete", value="delete", color="danger")
-                #     ],
-                #     onclick=partial(rowaction, username=thisusername)) \
-                if thisusername == username else put_text("") ]
+            ]
             for thisusername, name, balance, total in getusers()
         ]
     )
 
 
-def rowaction(action, username):
+def rowaction(action, username=None):
+    if action == "login":
+        clear()
+        username = basic_auth(checkauth, secret="aslkdjflksajdflkj", expire_days=60, token_name="xcoffee")
+        xcoffee(username)
+
+    elif action == "register":
+        form = popup_input(
+            [
+                put_input("username", label="username"),
+                put_input("name", label="display name"),
+                put_input("password", type=PASSWORD, label="password"),
+                put_text("If you forget your password, please contact Michał."),
+            ],
+            title="Register"
+        )
+        clear()
+        username = form["username"]
+        name = form["name"]
+        password = hashpass(form["password"])
+
+        con = sqlite3.connect("xcoffee.db")
+        cur = con.cursor()
+        res = cur.execute(f"SELECT name FROM users WHERE username='{username}'").fetchone()
+        if res is None:
+            cur.execute(f"INSERT INTO users VALUES ('{username}', '{name}', '{password}', 0, 0)")
+            con.commit()
+            put_text("Successfully registered.")
+        else:
+            put_text("User already exists.")
+
+        con.close()
+        actions(buttons=["okay"])
+        xcoffee()
+    elif action == "logout":
+        revoke_auth(token_name="xcoffee")
+        xcoffee()
+
     con = sqlite3.connect("xcoffee.db")
     cur = con.cursor()
 
@@ -174,45 +200,6 @@ def checkauth(username, password):
         return False
     con.close()
     return res[0] == hashpass(password)
-
-
-def homebutton(action):
-    if action == "login":
-        clear()
-        username = basic_auth(checkauth, secret="aslkdjflksajdflkj", expire_days=60, token_name="xcoffee")
-        xcoffee(username)
-
-    elif action == "register":
-        form = popup_input(
-            [
-                put_input("username", label="username"),
-                put_input("name", label="display name"),
-                put_input("password", type=PASSWORD, label="password"),
-                put_text("If you forget your password, please contact Michał."),
-            ],
-            title="Register"
-        )
-        clear()
-        username = form["username"]
-        name = form["name"]
-        password = hashpass(form["password"])
-
-        con = sqlite3.connect("xcoffee.db")
-        cur = con.cursor()
-        res = cur.execute(f"SELECT name FROM users WHERE username='{username}'").fetchone()
-        if res is None:
-            cur.execute(f"INSERT INTO users VALUES ('{username}', '{name}', '{password}', 0, 0)")
-            con.commit()
-            put_text("Successfully registered.")
-        else:
-            put_text("User already exists.")
-
-        con.close()
-        actions(buttons=["okay"])
-        xcoffee()
-    elif action == "logout":
-        revoke_auth(token_name="xcoffee")
-        xcoffee()
 
 
 if __name__ == '__main__':
