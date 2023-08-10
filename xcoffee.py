@@ -192,4 +192,4 @@ if __name__ == '__main__':
         cur.execute("CREATE TABLE users(username, name, password, balance, total)")
     con.close()
 
-    pywebio.start_server(xcoffee, port=8080, debug=True)
+    pywebio.start_server(xcoffee, port=8080)
