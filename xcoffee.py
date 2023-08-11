@@ -11,6 +11,8 @@ from pywebio_battery import popup_input, basic_auth, revoke_auth
 price = 1.5
 waterfraction = 0.2
 
+pywebio.config(title="x-ray coffee", theme="dark")
+
 
 def getusers():
     con = sqlite3.connect("xcoffee.db")
@@ -228,4 +230,4 @@ if __name__ == '__main__':
         cur.execute("CREATE TABLE users(username, name, password, balance, total)")
     con.close()
 
-    pywebio.start_server(xcoffee, port=5999)
+    pywebio.start_server(xcoffee, port=5999, debug=True)
