@@ -6,6 +6,7 @@ from pywebio.input import actions, input, FLOAT, TEXT, PASSWORD
 from pywebio.output import popup, close_popup, put_table, put_column, put_text, put_buttons, clear, put_markdown, put_collapse
 from pywebio.pin import put_input
 from pywebio_battery import popup_input, basic_auth, revoke_auth
+from pywebio.platform.flask import start_server
 
 
 price = 1.5
@@ -230,4 +231,4 @@ if __name__ == '__main__':
         cur.execute("CREATE TABLE users(username, name, password, balance, total)")
     con.close()
 
-    pywebio.start_server(xcoffee, port=5999, debug=True)
+    start_server(xcoffee, port=10220, debug=False)
